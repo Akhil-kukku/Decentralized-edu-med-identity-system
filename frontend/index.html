@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced DID System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-id-card text-white text-2xl mr-3"></i>
+                    <h1 class="text-white text-xl font-bold">Advanced DID System</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="connectWallet" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        <i class="fas fa-wallet mr-2"></i>Connect Wallet
+                    </button>
+                    <div id="walletInfo" class="hidden text-white">
+                        <span id="walletAddress" class="text-sm"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="hidden mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+            <p><i class="fas fa-exclamation-triangle mr-2"></i>Please connect your wallet to interact with the system.</p>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <i class="fas fa-id-card text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">My DID</p>
+                            <p id="myDID" class="text-lg font-semibold text-gray-900">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <i class="fas fa-certificate text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">My Credentials</p>
+                            <p id="myCredentials" class="text-lg font-semibold text-gray-900">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <i class="fas fa-shield-alt text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Verified</p>
+                            <p id="verifiedCount" class="text-lg font-semibold text-gray-900">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-orange-100 rounded-lg">
+                            <i class="fas fa-clock text-orange-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Expiring Soon</p>
+                            <p id="expiringCount" class="text-lg font-semibold text-gray-900">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Tabs -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6">
+                        <button class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="identity">
+                            <i class="fas fa-id-card mr-2"></i>Identity Management
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="credentials">
+                            <i class="fas fa-certificate mr-2"></i>Credentials
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="verification">
+                            <i class="fas fa-search mr-2"></i>Verification
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="settings">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Identity Management Tab -->
+                <div id="identity-tab" class="tab-content p-6">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Create or Manage Your DID</h3>
+                        
+                        <!-- Create DID Form -->
+                        <div id="createDIDForm" class="bg-gray-50 rounded-lg p-6 mb-6">
+                            <h4 class="text-md font-medium text-gray-900 mb-4">Create New DID</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">DID Identifier</label>
+                                    <input type="text" id="didInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="did:ethr:0x...">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Verification Method</label>
+                                    <input type="text" id="verificationMethodInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="did:ethr:0x...#key-1">
+                                </div>
+                            </div>
+                            <button id="createDIDBtn" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                                <i class="fas fa-plus mr-2"></i>Create DID
+                            </button>
+                        </div>
+
+                        <!-- DID Details -->
+                        <div id="didDetails" class="hidden bg-white border rounded-lg p-6">
+                            <h4 class="text-md font-medium text-gray-900 mb-4">Your DID Details</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">DID Identifier</label>
+                                    <p id="didIdentifier" class="text-sm text-gray-900"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Status</label>
+                                    <span id="didStatus" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Created</label>
+                                    <p id="didCreated" class="text-sm text-gray-900"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Last Updated</label>
+                                    <p id="didUpdated" class="text-sm text-gray-900"></p>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex space-x-2">
+                                <button id="updateDIDBtn" class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition">
+                                    <i class="fas fa-edit mr-2"></i>Update DID
+                                </button>
+                                <button id="deactivateDIDBtn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
+                                    <i class="fas fa-ban mr-2"></i>Deactivate DID
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Credentials Tab -->
+                <div id="credentials-tab" class="tab-content hidden p-6">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Manage Your Credentials</h3>
+                        
+                        <!-- Credentials List -->
+                        <div id="credentialsList" class="space-y-4">
+                            <!-- Credential cards will be dynamically generated here -->
+                        </div>
+
+                        <!-- Add Credential Button -->
+                        <button id="addCredentialBtn" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">
+                            <i class="fas fa-plus mr-2"></i>Add New Credential
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Verification Tab -->
+                <div id="verification-tab" class="tab-content hidden p-6">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Verify Credentials</h3>
+                        
+                        <!-- Verification Form -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Credential ID</label>
+                                <input type="text" id="verifyCredentialId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter credential ID">
+                            </div>
+                            <button id="verifyCredentialBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                                <i class="fas fa-search mr-2"></i>Verify Credential
+                            </button>
+                        </div>
+
+                        <!-- Verification Results -->
+                        <div id="verificationResults" class="hidden mt-6">
+                            <!-- Results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settings-tab" class="tab-content hidden p-6">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">System Settings</h3>
+                        
+                        <!-- Contract Addresses -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h4 class="text-md font-medium text-gray-900 mb-4">Contract Addresses</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Identity Registry</label>
+                                    <p id="identityRegistryAddress" class="text-sm text-gray-900 font-mono"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Credential Registry</label>
+                                    <p id="credentialRegistryAddress" class="text-sm text-gray-900 font-mono"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network Info -->
+                        <div class="bg-gray-50 rounded-lg p-6 mt-4">
+                            <h4 class="text-md font-medium text-gray-900 mb-4">Network Information</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Network</label>
+                                    <p id="networkName" class="text-sm text-gray-900"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Chain ID</label>
+                                    <p id="chainId" class="text-sm text-gray-900"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-4"></div>
+            <span class="text-gray-700">Processing transaction...</span>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="fixed top-4 right-4 z-50">
+        <!-- Messages will be dynamically added here -->
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
